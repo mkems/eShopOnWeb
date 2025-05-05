@@ -1,0 +1,74 @@
+name: eShopOnWeb Build and Deploy (Matrix Strategy)
+
+on: workflow_dispatch
+
+env:
+  TEMPLATE-FILE: infra/webapp.bicep
+  SUFFIX: $RANDOM$RANDOM
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+          dotnet-quality: "preview"
+
+      - name: Build with dotnet
+        run: dotnet build ./eShopOnWeb.sln --configuration Release
+
+      - name: Test with dotnet
+        run: dotnet test ./eShopOnWeb.sln --configuration Release
+
+      - name: Publish with dotnet
+        run: |
+          dotnet publish ./src/Web/Web.csproj -c Release -o ${{env.DOTNET_ROOT}}/myapp
+          cd ${{env.DOTNET_ROOT}}/myapp
+          zip -r ../app.zip .
+
+      - name: Upload artifact for deployment
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-${{ matrix.webapp-name }}
+          path: ${{env.DOTNET_ROOT}}/app.zip
+
+  deploy:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        region: [westeurope, eastus]
+        webapp-name: ["devops-webapp-${{ matrix.region }}-${{ env.SUFFIX }}"]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download artifact for deployment
+        uses: actions/download-artifact@v4
+        with:
+          name: app-${{ matrix.webapp-name }}
+          path: .
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy Azure WebApp using Bicep
+        uses: azure/arm-deploy@v2
+        with:
+          subscriptionId: ${{ secrets.AZURE_SUBSCRIPTIONID }}
+          resourceGroupName: rg-eshoponweb-${{ matrix.region }}
+          template: ${{ env.TEMPLATE-FILE }}
+          parameters: "webAppName=${{ matrix.webapp-name }} location=${{ matrix.region }}"
+
+      - name: Publish Website to WebApp
+        uses: Azure/cli@v2
+        with:
+          inlineScript: |
+            az webapp deploy --name ${{ matrix.webapp-name }} --resource-group rg-eshoponweb-${{ matrix.region }} --src-path app.zip --type zip
