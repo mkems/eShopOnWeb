@@ -46,7 +46,7 @@ jobs:
     steps:
       - name: Set WebApp Name
         id: set-webapp-name
-        run: echo "webapp_name=devops-webapp-${{ matrix.region }}-${{ env.SUFFIX }}" >> $GITHUB_ENV
+        run: echo "webapp-name=devops-webapp-${{ matrix.region }}-${{ env.SUFFIX }}" >> $GITHUB_ENV
 
       - name: Checkout code
         uses: actions/checkout@v4
