@@ -43,15 +43,18 @@ jobs:
     strategy:
       matrix:
         region: [westeurope, eastus]
-        webapp-name: ["devops-webapp-${{ matrix.region }}-${{ env.SUFFIX }}"]
     steps:
+      - name: Set WebApp Name
+        id: set-webapp-name
+        run: echo "webapp_name=devops-webapp-${{ matrix.region }}-${{ env.SUFFIX }}" >> $GITHUB_ENV
+
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Download artifact for deployment
         uses: actions/download-artifact@v4
         with:
-          name: app-${{ matrix.webapp-name }}
+          name: app-${{ env.webapp_name }}
           path: .
 
       - name: Azure Login
@@ -65,10 +68,10 @@ jobs:
           subscriptionId: ${{ secrets.AZURE_SUBSCRIPTIONID }}
           resourceGroupName: rg-eshoponweb-${{ matrix.region }}
           template: ${{ env.TEMPLATE-FILE }}
-          parameters: "webAppName=${{ matrix.webapp-name }} location=${{ matrix.region }}"
+          parameters: "webAppName=${{ env.webapp-name }} location=${{ matrix.region }}"
 
       - name: Publish Website to WebApp
         uses: Azure/cli@v2
         with:
           inlineScript: |
-            az webapp deploy --name ${{ matrix.webapp-name }} --resource-group rg-eshoponweb-${{ matrix.region }} --src-path app.zip --type zip
+            az webapp deploy --name ${{ env.webapp-name }} --resource-group rg-eshoponweb-${{ matrix.region }} --src-path app.zip --type zip
