@@ -31,10 +31,10 @@ jobs:
           cd ${{env.DOTNET_ROOT}}/myapp
           zip -r ../app.zip .
 
-      - name: Upload artifact for deployment
+      - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
-          name: app-${{ matrix.webapp-name }}
+          name: .net-app
           path: ${{env.DOTNET_ROOT}}/app.zip
 
   deploy:
@@ -54,7 +54,7 @@ jobs:
       - name: Download artifact for deployment
         uses: actions/download-artifact@v4
         with:
-          name: app-${{ env.webapp_name }}
+          name: .net-app
           path: .
 
       - name: Azure Login
