@@ -42,7 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        region: [westeurope, westgermanycentral]
+        region: [westeurope, germanywestcentral]
     steps:
       - name: Set WebApp Name
         id: set-webapp-name
