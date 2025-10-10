@@ -1,0 +1,39 @@
+name: Build .Net Core Solution
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Restore
+        run: dotnet restore '**/*.sln'
+        env:
+          DOTNET_FEED: select
+
+      - name: Build
+        run: dotnet build '**/*.sln'
+
+      - name: Test
+        run: dotnet test 'tests/UnitTests/*.csproj'
+
+      - name: Publish
+        run: dotnet publish -o ${{ github.workspace }}/publish
+
+      - name: Publish Artifacts ADO - Website
+        uses: actions/upload-artifact@v3
+        with:
+          name: Website
+          path: ${{ github.workspace }}/publish
+
+      - name: Publish Artifacts ADO - Bicep
+        uses: actions/upload-artifact@v3
+        with:
+          name: Bicep
+          path: ${{ github.workspace }}/infra/webapp.bicep
